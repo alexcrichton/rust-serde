@@ -422,25 +422,6 @@ fn test_net_ipaddr() {
 }
 
 #[test]
-fn test_cannot_serialize_paths() {
-    let path = unsafe {
-        str::from_utf8_unchecked(b"Hello \xF0\x90\x80World")
-    };
-    assert_ser_tokens_error(
-        &Path::new(path),
-        &[],
-        Error::Message("path contains invalid UTF-8 characters".to_owned()));
-
-    let mut path_buf = PathBuf::new();
-    path_buf.push(path);
-
-    assert_ser_tokens_error(
-        &path_buf,
-        &[],
-        Error::Message("path contains invalid UTF-8 characters".to_owned()));
-}
-
-#[test]
 fn test_enum_skipped() {
     assert_ser_tokens_error(
         &Enum::SkippedUnit,

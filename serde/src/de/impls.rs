@@ -26,7 +26,7 @@ use std::net;
 use std::path;
 use core::str;
 #[cfg(feature = "std")]
-use std::ffi::CString;
+use std::ffi::{CString, OsString, OsStr};
 #[cfg(all(feature = "std", feature="unstable"))]
 use std::ffi::CStr;
 
@@ -887,35 +887,91 @@ impl Deserialize for net::SocketAddrV6 {
 ///////////////////////////////////////////////////////////////////////////////
 
 #[cfg(feature = "std")]
-struct PathBufVisitor;
-
-#[cfg(feature = "std")]
-impl Visitor for PathBufVisitor {
-    type Value = path::PathBuf;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("path string")
-    }
-
-    fn visit_str<E>(self, v: &str) -> Result<path::PathBuf, E>
-        where E: Error
-    {
-        Ok(From::from(v))
-    }
-
-    fn visit_string<E>(self, v: String) -> Result<path::PathBuf, E>
-        where E: Error
-    {
-        Ok(From::from(v))
-    }
-}
-
-#[cfg(feature = "std")]
 impl Deserialize for path::PathBuf {
     fn deserialize<D>(deserializer: D) -> Result<path::PathBuf, D::Error>
         where D: Deserializer
     {
-        deserializer.deserialize_string(PathBufVisitor)
+        OsString::deserialize(deserializer).map(|s| s.into())
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+#[cfg(feature = "std")]
+struct OsStringVisitor;
+
+#[cfg(feature = "std")]
+impl Visitor for OsStringVisitor {
+    type Value = OsString;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("os string")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<OsString, E>
+        where E: Error
+    {
+        Ok(From::from(v))
+    }
+
+    fn visit_string<E>(self, v: String) -> Result<OsString, E>
+        where E: Error
+    {
+        Ok(From::from(v))
+    }
+
+    #[cfg(unix)]
+    fn visit_seq<V>(self, mut visitor: V) -> Result<OsString, V::Error>
+        where V: SeqVisitor,
+    {
+        use std::os::unix::ffi::OsStringExt;
+
+        let mut values = Vec::with_capacity(visitor.size_hint().0);
+        while let Some(value) = try!(visitor.visit()) {
+            values.push(value);
+        }
+
+        Ok(OsString::from_vec(values))
+    }
+
+    #[cfg(unix)]
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+        where E: Error
+    {
+        use std::os::unix::ffi::OsStrExt;
+        Ok(OsStr::from_bytes(v).to_owned())
+    }
+
+    #[cfg(unix)]
+    fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+        where E: Error
+    {
+        use std::os::unix::ffi::OsStringExt;
+        Ok(OsString::from_vec(v).to_owned())
+    }
+
+    #[cfg(windows)]
+    fn visit_seq<V>(self, mut visitor: V) -> Result<OsString, V::Error>
+        where V: SeqVisitor,
+    {
+        use std::os::windows::ffi::OsStringExt;
+
+        let mut values = Vec::with_capacity(visitor.size_hint().0);
+
+        while let Some(value) = try!(visitor.visit()) {
+            values.push(value);
+        }
+
+        Ok(OsString::from_wide(&values))
+    }
+}
+
+#[cfg(feature = "std")]
+impl Deserialize for OsString {
+    fn deserialize<D>(deserializer: D) -> Result<OsString, D::Error>
+        where D: Deserializer
+    {
+        deserializer.deserialize_string(OsStringVisitor)
     }
 }
 

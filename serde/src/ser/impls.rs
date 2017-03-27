@@ -20,7 +20,7 @@ use core::ops;
 #[cfg(feature = "std")]
 use std::path;
 #[cfg(feature = "std")]
-use std::ffi::{CString, CStr};
+use std::ffi::{CString, CStr, OsString, OsStr};
 #[cfg(feature = "std")]
 use std::rc::Rc;
 #[cfg(all(feature = "alloc", not(feature = "std")))]
@@ -698,10 +698,7 @@ impl Serialize for path::Path {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer
     {
-        match self.to_str() {
-            Some(s) => s.serialize(serializer),
-            None => Err(Error::custom("path contains invalid UTF-8 characters")),
-        }
+        self.as_os_str().serialize(serializer)
     }
 }
 
@@ -711,6 +708,37 @@ impl Serialize for path::PathBuf {
         where S: Serializer
     {
         self.as_path().serialize(serializer)
+    }
+}
+
+#[cfg(feature = "std")]
+impl Serialize for OsStr {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        match self.to_str() {
+            Some(s) => s.serialize(serializer),
+            #[cfg(unix)]
+            None => {
+                use std::os::unix::ffi::OsStrExt;
+                serializer.serialize_bytes(self.as_bytes())
+            }
+
+            #[cfg(windows)]
+            None => {
+                use std::os::windows::ffi::OsStrExt;
+                self.encode_wide().collect::<Vec<_>>().serialize(serializer)
+            }
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl Serialize for OsString {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        self.as_os_str().serialize(serializer)
     }
 }
 

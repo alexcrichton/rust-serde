@@ -8,7 +8,7 @@ use std::net;
 use std::path::PathBuf;
 use std::time::Duration;
 use std::default::Default;
-use std::ffi::CString;
+use std::ffi::{CString, OsString};
 
 #[cfg(feature = "unstable")]
 use std::ffi::CStr;
@@ -909,6 +909,54 @@ declare_tests! {
     test_cstring {
         CString::new("abc").unwrap() => &[
             Token::Bytes(b"abc"),
+        ],
+    }
+    test_osstring {
+        OsString::from("abc") => &[
+            Token::String("abc".to_owned()),
+        ],
+        {
+            #[cfg(unix)]
+            fn funky() -> Option<OsString> {
+                use std::os::unix::ffi::OsStringExt;
+                Some(OsString::from_vec(vec![1, 2, 3]))
+            }
+            #[cfg(windows)]
+            fn funky() -> Option<OsString> {
+                None
+            }
+            match funky() {
+                Some(s) => s,
+                None => return,
+            }
+        } => &[
+            Token::Bytes(b"\x01\x02\x03"),
+        ],
+        {
+            #[cfg(windows)]
+            fn funky() -> Option<OsString> {
+                use std::os::widnows::ffi::OsStringExt;
+                Some(OsString::from_wide(&[1, 2, 3]))
+            }
+            #[cfg(unix)]
+            fn funky() -> Option<OsString> {
+                None
+            }
+            match funky() {
+                Some(s) => s,
+                None => return,
+            }
+        } => &[
+            Token::SeqStart(Some(2)),
+                Token::SeqSep,
+                Token::U16(1),
+
+                Token::SeqSep,
+                Token::U16(2),
+
+                Token::SeqSep,
+                Token::U16(3),
+            Token::SeqEnd,
         ],
     }
 }
