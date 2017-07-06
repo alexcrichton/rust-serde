@@ -11,6 +11,7 @@
 extern crate syn;
 #[macro_use]
 extern crate synom;
+extern crate literalext;
 
 pub mod ast;
 pub mod attr;

@@ -22,3 +22,5 @@ proc-macro = true
 quote = "0.3.8"
 serde_derive_internals = { version = "=0.15.1", default-features = false, path = "../serde_derive_internals" }
 syn = { version = "0.11", features = ["visit"] }
+synom = { version = "0.11", default-features = false }
+proc-macro2 = "0.1"

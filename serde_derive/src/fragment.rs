@@ -7,6 +7,7 @@
 // except according to those terms.
 
 use quote::{Tokens, ToTokens};
+use synom::tokens;
 
 pub enum Fragment {
     /// Tokens that can be used as an expression.
@@ -36,9 +37,7 @@ impl ToTokens for Expr {
         match self.0 {
             Fragment::Expr(ref expr) => expr.to_tokens(out),
             Fragment::Block(ref block) => {
-                out.append("{");
-                block.to_tokens(out);
-                out.append("}");
+                out.append_delimited("{", Default::default(), |out| block.to_tokens(out))
             }
         }
     }
@@ -63,12 +62,10 @@ impl ToTokens for Match {
         match self.0 {
             Fragment::Expr(ref expr) => {
                 expr.to_tokens(out);
-                out.append(",");
+                tokens::Comma::default().to_tokens(out);
             }
             Fragment::Block(ref block) => {
-                out.append("{");
-                block.to_tokens(out);
-                out.append("}");
+                out.append_delimited("{", Default::default(), |out| block.to_tokens(out))
             }
         }
     }
