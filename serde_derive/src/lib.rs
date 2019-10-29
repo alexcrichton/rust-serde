@@ -79,18 +79,24 @@ mod try;
 
 #[proc_macro_derive(Serialize, attributes(serde))]
 pub fn derive_serialize(input: TokenStream) -> TokenStream {
+    let start = std::time::Instant::now();
     let input = parse_macro_input!(input as DeriveInput);
-    ser::expand_derive_serialize(&input)
+    let ret = ser::expand_derive_serialize(&input)
         .unwrap_or_else(to_compile_errors)
-        .into()
+        .into();
+    println!("derive serialize time {:?}", start.elapsed());
+    return ret;
 }
 
 #[proc_macro_derive(Deserialize, attributes(serde))]
 pub fn derive_deserialize(input: TokenStream) -> TokenStream {
+    let start = std::time::Instant::now();
     let input = parse_macro_input!(input as DeriveInput);
-    de::expand_derive_deserialize(&input)
+    let ret = de::expand_derive_deserialize(&input)
         .unwrap_or_else(to_compile_errors)
-        .into()
+        .into();
+    println!("derive deserialize time {:?}", start.elapsed());
+    return ret;
 }
 
 fn to_compile_errors(errors: Vec<syn::Error>) -> proc_macro2::TokenStream {
