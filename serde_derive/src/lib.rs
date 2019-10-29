@@ -76,10 +76,8 @@ mod pretend;
 mod ser;
 mod try;
 
-#[no_mangle]
-pub extern "C" fn derive_serialize(input: TokenStream) -> TokenStream {
-    proc_macro2::set_wasm_panic_hook();
-
+#[proc_macro2::proc_macro_derive(Serialize, attribute(serde))]
+pub fn derive_serialize(input: TokenStream) -> TokenStream {
     let input: DeriveInput = match syn::parse2(input) {
         Ok(input) => input,
         Err(err) => return err.to_compile_error(),
@@ -88,10 +86,8 @@ pub extern "C" fn derive_serialize(input: TokenStream) -> TokenStream {
     ser::expand_derive_serialize(&input).unwrap_or_else(to_compile_errors)
 }
 
-#[no_mangle]
-pub extern "C" fn derive_deserialize(input: TokenStream) -> TokenStream {
-    proc_macro2::set_wasm_panic_hook();
-
+#[proc_macro2::proc_macro_derive(Deserialize, attribute(serde))]
+pub fn derive_deserialize(input: TokenStream) -> TokenStream {
     let input: DeriveInput = match syn::parse2(input) {
         Ok(input) => input,
         Err(err) => return err.to_compile_error(),

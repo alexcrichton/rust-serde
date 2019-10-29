@@ -20,7 +20,7 @@ default = []
 deserialize_in_place = []
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 proc-macro2 = "1.0"
@@ -33,4 +33,8 @@ serde = { version = "1.0", path = "../serde" }
 [workspace]
 
 [patch.crates-io]
-proc-macro2 = { git = "https://github.com/dtolnay/watt" }
+proc-macro2 = { path = '/home/alex/code/watt/proc-macro' }
+
+[profile.release]
+lto = true
+opt-level = 's'
